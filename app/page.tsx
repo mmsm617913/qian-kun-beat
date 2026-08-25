@@ -65,56 +65,79 @@ export default function Home() {
     if (ctx.state === 'suspended') void ctx.resume();
     const step = melodyStep.current++;
     const sixteenth = 60000 / bpm / 4000;
+    // 原創的 C 大調團康編曲：所有鼓點、低音、和弦與旋律都鎖在同一個十六分音符時鐘。
     const progressions = [
-      [261.63, 329.63, 392.0], [220.0, 261.63, 329.63],
-      [174.61, 220.0, 261.63], [196.0, 246.94, 293.66],
+      [261.63, 329.63, 392.0], [196.0, 246.94, 293.66],
+      [220.0, 261.63, 329.63], [174.61, 220.0, 261.63],
     ];
     const chord = progressions[Math.floor(step / 16) % progressions.length];
-    const voice = (frequency: number, type: OscillatorType, duration: number, volume: number, delay = 0) => {
-      const oscillator = ctx.createOscillator(); const gain = ctx.createGain();
+    const now = ctx.currentTime;
+    const voice = (frequency: number, type: OscillatorType, duration: number, volume: number, delay = 0, cutoff = 4200) => {
+      const oscillator = ctx.createOscillator(); const gain = ctx.createGain(); const filter = ctx.createBiquadFilter();
       oscillator.type = type; oscillator.frequency.value = frequency;
-      const start = ctx.currentTime + delay;
+      filter.type = 'lowpass'; filter.frequency.value = cutoff; filter.Q.value = 0.55;
+      const start = now + delay;
       gain.gain.setValueAtTime(0.0001, start); gain.gain.exponentialRampToValueAtTime(volume, start + 0.018);
       gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
-      oscillator.connect(gain).connect(ctx.destination); oscillator.start(start); oscillator.stop(start + duration + 0.03);
+      oscillator.connect(filter).connect(gain).connect(ctx.destination); oscillator.start(start); oscillator.stop(start + duration + 0.03);
     };
     const kick = () => {
       const oscillator = ctx.createOscillator(); const gain = ctx.createGain();
-      oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(150, ctx.currentTime);
-      oscillator.frequency.exponentialRampToValueAtTime(48, ctx.currentTime + 0.13);
-      gain.gain.setValueAtTime(0.32, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
-      oscillator.connect(gain).connect(ctx.destination); oscillator.start(); oscillator.stop(ctx.currentTime + 0.22);
+      oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(170, now);
+      oscillator.frequency.exponentialRampToValueAtTime(46, now + 0.15);
+      gain.gain.setValueAtTime(0.46, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      oscillator.connect(gain).connect(ctx.destination); oscillator.start(now); oscillator.stop(now + 0.24);
+      // 短促的高頻起音讓平板喇叭也能聽清楚每一拍。
+      voice(1120, 'triangle', 0.028, 0.045, 0, 6500);
     };
     const snare = () => {
-      const duration = 0.13; const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * duration), ctx.sampleRate);
+      const duration = 0.16; const buffer = ctx.createBuffer(1, Math.floor(ctx.sampleRate * duration), ctx.sampleRate);
       const data = buffer.getChannelData(0); for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 2);
       const source = ctx.createBufferSource(); const filter = ctx.createBiquadFilter(); const gain = ctx.createGain();
-      source.buffer = buffer; filter.type = 'bandpass'; filter.frequency.value = 1850; filter.Q.value = 0.65;
-      gain.gain.setValueAtTime(0.17, ctx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
-      source.connect(filter).connect(gain).connect(ctx.destination); source.start();
-      voice(185, 'triangle', 0.09, 0.065);
+      source.buffer = buffer; filter.type = 'bandpass'; filter.frequency.value = 2050; filter.Q.value = 0.72;
+      gain.gain.setValueAtTime(0.24, now); gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+      source.connect(filter).connect(gain).connect(ctx.destination); source.start(now);
+      voice(190, 'triangle', 0.095, 0.075, 0, 1800);
     };
-    if (step % 4 === 0) kick();
-    if (step % 16 === 4 || step % 16 === 12) snare();
-    if (step % 16 === 0) {
-      chord.forEach((note) => voice(note, 'sine', sixteenth * 14.5, 0.019));
-      voice(chord[0] / 2, 'triangle', sixteenth * 3.4, 0.07);
-    }
-    const bassPattern = [0, 3, 8, 11];
-    if (bassPattern.includes(step % 16)) voice(chord[(step % 16) >= 8 ? 2 : 0] / 2, 'triangle', sixteenth * 2.8, 0.055);
-    if (step % 2 === 0) voice(chord[(step / 2) % 3] * 2, 'triangle', sixteenth * 1.45, 0.021);
-    const leadPattern = [0, 2, 4, 7, 4, 2, 1, 2];
-    const scale = [523.25, 587.33, 659.25, 783.99, 880, 783.99, 659.25, 587.33];
-    if (step % 4 === 2) voice(scale[leadPattern[(step / 2) % leadPattern.length]], 'sine', sixteenth * 1.65, 0.017);
-    if (step % 4 === 2) {
-      const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * 0.035)), ctx.sampleRate);
-      const data = buffer.getChannelData(0); for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    const noiseHit = (duration: number, volume: number, highpass: number, delay = 0) => {
+      const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * duration)), ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 1.7);
       const source = ctx.createBufferSource(); const gain = ctx.createGain(); const filter = ctx.createBiquadFilter();
-      source.buffer = buffer; filter.type = 'highpass'; filter.frequency.value = 5200; gain.gain.value = 0.012;
-      source.connect(filter).connect(gain).connect(ctx.destination); source.start();
+      source.buffer = buffer; filter.type = 'highpass'; filter.frequency.value = highpass;
+      const start = now + delay; gain.gain.setValueAtTime(volume, start); gain.gain.exponentialRampToValueAtTime(0.001, start + duration);
+      source.connect(filter).connect(gain).connect(ctx.destination); source.start(start);
+    };
+    const marimba = (frequency: number, volume = 0.035, delay = 0) => {
+      voice(frequency, 'sine', sixteenth * 1.45, volume, delay, 5200);
+      voice(frequency * 2, 'triangle', sixteenth * 0.72, volume * 0.28, delay, 6000);
+    };
+
+    const barStep = step % 16;
+    if (step % 4 === 0) kick();
+    if (barStep === 4 || barStep === 12) snare();
+    // 八分音符沙鈴 + 反拍開鈸，形成歡快且容易跟拍的律動。
+    if (barStep % 2 === 0) noiseHit(0.032, barStep % 4 === 2 ? 0.027 : 0.016, 4800);
+    if (barStep === 6 || barStep === 14) noiseHit(sixteenth * 1.7, 0.022, 6100);
+    if (barStep === 0) {
+      chord.forEach((note) => voice(note, 'sine', sixteenth * 15, 0.014, 0, 2600));
+      voice(chord[0] / 2, 'triangle', sixteenth * 3.2, 0.09, 0, 1300);
     }
-    if (step % 16 === 15) {
-      [0, 1, 2].forEach((n) => voice(chord[n] * 2, 'triangle', sixteenth * 0.48, 0.024, n * sixteenth * 0.28));
+    const bassPattern = [0, 3, 8, 10, 14];
+    if (bassPattern.includes(barStep)) {
+      const bassNote = barStep >= 8 ? (barStep === 10 ? chord[2] : chord[0]) : chord[0];
+      voice(bassNote / 2, 'triangle', sixteenth * 2.25, barStep === 0 || barStep === 8 ? 0.072 : 0.052, 0, 1200);
+    }
+    // 和弦放在反拍，增加向前推進的彈跳感。
+    if ([2, 6, 10, 14].includes(barStep)) {
+      chord.forEach((note) => voice(note * 2, 'triangle', sixteenth * 1.18, 0.018, 0, 3400));
+    }
+    const phrase = [0, 2, 4, 2, 5, 4, 2, 1, 0, 2, 4, 5, 4, 2, 1, 2];
+    const scale = [523.25, 587.33, 659.25, 698.46, 783.99, 880.0];
+    if (barStep % 2 === 0) marimba(scale[phrase[barStep]], barStep === 0 || barStep === 8 ? 0.044 : 0.032);
+    // 每四小節加入很短的上行過門，讓背景不會一直重複。
+    if (Math.floor(step / 16) % 4 === 3 && barStep === 15) {
+      [0, 1, 2].forEach((n) => marimba(chord[n] * 2, 0.035, n * sixteenth * 0.27));
     }
   }, [muted, bpm]);
 
