@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="70" y1="45" x2="445" y2="470" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2f6b4f"/>
+      <stop offset="1" stop-color="#173f32"/>
+    </linearGradient>
+    <linearGradient id="basket" x1="155" y1="246" x2="350" y2="410" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#f3c85b"/>
+      <stop offset="1" stop-color="#e18a3f"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="247" r="184" fill="#fff9e9" opacity=".12"/>
+  <path d="M157 249c16-93 64-137 99-137s83 44 99 137" fill="none" stroke="#fff6d1" stroke-width="27" stroke-linecap="round"/>
+  <path d="M116 239h280l-31 174a42 42 0 0 1-41 35H188a42 42 0 0 1-41-35l-31-174Z" fill="url(#basket)" stroke="#fff6d1" stroke-width="15" stroke-linejoin="round"/>
+  <path d="M166 296h180M179 350h154M211 252l13 178M301 252l-13 178" fill="none" stroke="#9c562a" stroke-width="16" stroke-linecap="round" opacity=".72"/>
+  <circle cx="179" cy="221" r="34" fill="#ef6b59" stroke="#fff6d1" stroke-width="9"/>
+  <circle cx="238" cy="198" r="38" fill="#71a850" stroke="#fff6d1" stroke-width="9"/>
+  <circle cx="300" cy="207" r="35" fill="#f1b83d" stroke="#fff6d1" stroke-width="9"/>
+  <circle cx="346" cy="226" r="29" fill="#8c70b8" stroke="#fff6d1" stroke-width="9"/>
+</svg>
