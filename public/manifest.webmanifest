@@ -1,0 +1,28 @@
+{
+  "id": "./",
+  "name": "乾坤節奏王",
+  "short_name": "節奏王",
+  "description": "可離線使用的團體節奏互動遊戲",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#fff8ec",
+  "theme_color": "#e97878",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
+
